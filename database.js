@@ -208,30 +208,39 @@ function checkTimes(currHrs,currMin, callback) {
     	var ppl = dbo.collection("People");
 
 	
-    	var query = {$where : function() {
-	    var time = this.time_end;
-	    if(time == null)
-		return false;
-	    var hrs = time.substring(0,time.indexOf(":")-1);
-	    var min = time.substring(time.indexOf(":")+1);
-	    console.log("Time: "+hrs+":"+min +" --- CurrTime: "+currHrs+
-		       ":"+currMin); 
-
-	    if (currHrs > hrs)
-		return true;
-	    if (currHrs == hrs && currMin > min)
-		return true;
-	    return false;
-	} };
-    	var vals = {$set: {"location":null, "time_start":null, "time_end":null}};
-    	ppl.updateOne(query, vals, function(err, res) {
+    	var query = { "time_end": {$ne : null}};
+    	ppl.find(query,{projection: {"_id":0,"email":1,"time_end":1}}).toArray(function(err, res) {
     	    if (err) {
     		console.log ("Error: " + err);
     		return;
     	    }
+	    console.log(res);
+	    var to_clear = [];
+	    for (i=0; i < res.length; i++) {
+		var time = res[i].time_end;
+		console.log(time);
+		var hrs = time.substring(0,time.indexOf(":")-1);
+		var min = time.substring(time.indexOf(":")+1);
+		var add = false;
+		if (currHrs > hrs)
+		    add = true;
+		if (currHrs == hrs && currMin > min)
+		    add = true;
+		if (add)
+		    to_clear.push(res[i].email);
+	    }
+	    console.log ("TO CLEAR: "+to_clear);
+	    var vals = {$set: {"location":null, "time_start":null, "time_end":null}};
+	    ppl.updateMany({"email": { $in : to_clear } }, vals, function(err,res) {
+		if (err) {
+    		    console.log ("Error: " + err);
+    		    return;
+    		}
+		db.close();
+    		callback();
+	    });
     	    //console.log("Successfully updated "+email+" to be at "+location);
-    	    db.close();
-    	    callback();
+
     	});
     });
 }
@@ -269,3 +278,4 @@ function getFriendInfo(email, callback) {
 }
 
 
+checkTimes(22,41,function(){});
