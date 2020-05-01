@@ -210,8 +210,12 @@ function checkTimes(currHrs,currMin, callback) {
 	
     	var query = {$where : function() {
 	    var time = this.time_end;
+	    if(time == null)
+		return false;
 	    var hrs = time.substring(0,time.indexOf(":")-1);
 	    var min = time.substring(time.indexOf(":")+1);
+	    console.log("Time: "+hrs+":"+min +" --- CurrTime: "+currHrs+
+		       ":"+currMin); 
 
 	    if (currHrs > hrs)
 		return true;
