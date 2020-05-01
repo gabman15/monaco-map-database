@@ -203,7 +203,7 @@ function checkTimes(currHrs,currMin, callback) {
     	if(err) {
     	    return console.log(err);
     	}
-
+	console.log("Checking times");
     	var dbo = db.db("MonacoMap");
     	var ppl = dbo.collection("People");
 
