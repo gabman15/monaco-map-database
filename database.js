@@ -25,6 +25,7 @@ var httpServer = http.createServer(function (req, res) {
 	    let today = new Date();
 	    let current_hours = today.getHours();
 	    let current_minutes = today.getMinutes();
+	    console.log(current_hours+":"+current_minutes);
             usr_email = url_parts.query.usr_email;
             usr_name = url_parts.query.usr_name;
             console.log(usr_email);
@@ -204,6 +205,7 @@ function checkTimes(currHrs,currMin, callback) {
     	    return console.log(err);
     	}
 	console.log("Checking times");
+	console.log(currHrs+":"+currMin);
     	var dbo = db.db("MonacoMap");
     	var ppl = dbo.collection("People");
 
@@ -218,9 +220,10 @@ function checkTimes(currHrs,currMin, callback) {
 	    var to_clear = [];
 	    for (i=0; i < res.length; i++) {
 		var time = res[i].time_end;
-		console.log(time);
-		var hrs = time.substring(0,time.indexOf(":")-1);
+		//console.log(time);
+		var hrs = time.substring(0,time.indexOf(":"));
 		var min = time.substring(time.indexOf(":")+1);
+		//console.log(hrs+":"+min);
 		var add = false;
 		if (currHrs > hrs)
 		    add = true;
