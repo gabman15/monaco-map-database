@@ -21,21 +21,27 @@ var httpServer = http.createServer(function (req, res) {
     url_parts = url.parse(req.url, true);
     switch (req.method) {
         case "GET":
-            if (url_parts.pathname == "/get_friend_data") {
-                usr_email = url_parts.query.usr_email;
-                usr_name = url_parts.query.usr_name;
-                console.log(usr_email);
-                addPerson(usr_email, usr_name, function () {
+        if (url_parts.pathname == "/get_friend_data") {
+	    let today = new Date();
+	    let current_hours = today.getHours();
+	    let current_minutes = today.getMinutes();
+            usr_email = url_parts.query.usr_email;
+            usr_name = url_parts.query.usr_name;
+            console.log(usr_email);
+
+	    checkTimes(current_hours, current_minutes, function() {
+		addPerson(usr_email, usr_name, function () {
                     getFriendInfo(usr_email, function(friendInfo) {
-                        response_string = JSON.stringify(friendInfo);
-                        res.writeHead(200, {'Content-Type': 'text/html', 'Access-Control-Allow-Origin': "https://gsidam01.github.io"});
-                        res.write("A get method was requested\n");
-                        res.write(response_string);
-                        res.end();
+			response_string = JSON.stringify(friendInfo);
+			res.writeHead(200, {'Content-Type': 'text/html', 'Access-Control-Allow-Origin': "https://gsidam01.github.io"});
+			res.write("A get method was requested\n");
+			res.write(response_string);
+			res.end();
                     });
-                });
-            }
-            break;
+		});
+	    });
+        }
+        break;
         case "POST":
                 if (url_parts.pathname == "/add_a_friend") {
                     usr_email = url_parts.query.usr_email;
@@ -192,38 +198,69 @@ function updatePerson(email, location, timeStart, timeEnd, callback) {
     });
 }
 
+function checkTimes(currHrs,currMin, callback) {
+    MongoClient.connect(mongo_url, { useUnifiedTopology: true }, function(err, db) {
+    	if(err) {
+    	    return console.log(err);
+    	}
+
+    	var dbo = db.db("MonacoMap");
+    	var ppl = dbo.collection("People");
+
+	
+    	var query = {$where : function() {
+	    var time = this.time_end;
+	    var hrs = time.substring(0,1);
+	    var min = time.substring(3,4);
+
+	    if (currHrs > hrs)
+		return true;
+	    if (currHrs == hrs && currMin > min)
+		return true;
+	    return false;
+	} };
+    	var vals = {$set: {"location":null, "time_start":null, "time_end":null}};
+    	ppl.updateOne(query, vals, function(err, res) {
+    	    if (err) {
+    		console.log ("Error: " + err);
+    		return;
+    	    }
+    	    //console.log("Successfully updated "+email+" to be at "+location);
+    	    db.close();
+    	    callback();
+    	});
+    });
+}
+
 function getFriendInfo(email, callback) {
     MongoClient.connect(mongo_url, { useUnifiedTopology: true }, function(err, db) {
-    if(err) {
-        return console.log(err);
-    }
+	if(err) {
+            return console.log(err);
+	}
 
-    var dbo = db.db("MonacoMap");
-    var ppl = dbo.collection("People");
+	var dbo = db.db("MonacoMap");
+	var ppl = dbo.collection("People");
 
-    var query = {"email":email};
+	var query = {"email":email};
 
-    ppl.findOne(query, function(err, res) {
-        if (err) {
-        console.log ("Error: " + err);
-        return;
-        }
-        var friends = res.friends;
-        var query = {$and: [ {"email": {$in : friends}}, {"location": {$ne: null}} ] }
-        ppl.find(query,
-             {projection:{"_id":0,"name":1,"location":1,"time_end":1}}).toArray(function(err,res) {
-             if (err) {
-                 console.log ("Error: " + err);
-                 return;
-             }
-             var friendInfo = JSON.parse('{"friends" : []}');
-             friendInfo.friends = res;
-
-             db.close();
-             callback(friendInfo);
-             }
-        );
-    });
+	ppl.findOne(query, function(err, res) {
+            if (err) {
+		console.log ("Error: " + err);
+		return;
+            }
+            var friends = res.friends;
+            var query = {$and: [ {"email": {$in : friends}}, {"location": {$ne: null}} ] }
+            ppl.find(query, {projection:{"_id":0,"name":1,"location":1,"time_end":1}}).toArray(function(err,res) {
+		if (err) {
+		    console.log ("Error: " + err);
+		    return;
+		}
+		var friendInfo = JSON.parse('{"friends" : []}');
+		friendInfo.friends = res;
+		db.close();
+		callback(friendInfo);
+	    });
+	});
     });
 }
 
