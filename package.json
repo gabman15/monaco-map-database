@@ -4,7 +4,7 @@
   "description": "Database to store people for the Monaco Map",
   "main": "database.js",
   "dependencies": {
-    "mongodb": "^3.5.6"
+    "mongodb": "^3.7.4"
   },
   "devDependencies": {},
   "scripts": {
